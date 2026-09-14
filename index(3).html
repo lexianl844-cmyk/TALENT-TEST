@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>天赋测评 · 发现你的天赋密码</title>
+<style>
+  /* ===================== 设计变量（浅色 · 扁平） ===================== */
+  :root{
+    --bg-1:#f6f8fc;          /* 浅色背景起 */
+    --bg-2:#eef1f8;          /* 浅色背景止 */
+    --card:#ffffff;          /* 卡片纯白 */
+    --card-border:rgba(30,30,55,0.08);
+    --primary:#6c63ff;       /* 主强调 紫蓝 */
+    --secondary:#00b894;     /* 副强调 青绿 */
+    --warn:#ff6b6b;          /* 警告 珊瑚红 */
+    --text:#23233a;          /* 主文字 */
+    --text-2:#70748c;        /* 副文字 */
+    --font:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--font);
+    color:var(--text);
+    background:linear-gradient(160deg,var(--bg-1),var(--bg-2));
+    background-attachment:fixed;
+    min-height:100vh;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  /* ===================== 视图切换（淡入+上移） ===================== */
+  .view{display:none;min-height:100vh;}
+  .view.active{display:block;animation:fadeUp .35s ease both;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+  /* ===================== 首页 ===================== */
+  #home{
+    display:none;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;padding:24px;min-height:100vh;
+  }
+  #home.active{display:flex;}
+  .ring{
+    width:184px;height:184px;border-radius:50%;
+    border:2px solid var(--primary);
+    background:#ffffff;
+    color:var(--primary);
+    box-shadow:0 10px 30px rgba(108,99,255,0.18);
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;animation:pulse 2.4s ease-in-out infinite;
+    font-size:17px;font-weight:600;letter-spacing:2px;user-select:none;
+  }
+  @keyframes pulse{0%,100%{transform:scale(1);box-shadow:0 10px 30px rgba(108,99,255,0.18);}50%{transform:scale(1.05);box-shadow:0 14px 38px rgba(108,99,255,0.28);}}
+  .ring:active{transform:scale(.97);}
+  h1.title{font-size:30px;margin:36px 0 8px;letter-spacing:1px;font-weight:800;color:var(--text);}
+  .subtitle{color:var(--text-2);font-size:15px;margin-bottom:40px;}
+  .footnote{position:fixed;bottom:18px;left:0;right:0;text-align:center;color:var(--text-2);font-size:12px;opacity:.85;}
+  .ghost-btn{
+    margin-top:18px;background:transparent;color:var(--text-2);border:1px solid var(--card-border);
+    padding:10px 20px;border-radius:24px;font-size:14px;cursor:pointer;font-family:var(--font);
+  }
+  .ghost-btn:hover{color:var(--primary);border-color:var(--primary);}
+
+  /* ===================== 通用容器 ===================== */
+  .wrap{max-width:640px;margin:0 auto;padding:28px 20px 60px;}
+  .glass{
+    background:var(--card);border:1px solid var(--card-border);border-radius:16px;
+    padding:22px;margin-bottom:22px;box-shadow:0 2px 10px rgba(20,20,40,0.04);
+  }
+  .glow-border{border-color:rgba(108,99,255,0.4);box-shadow:0 4px 18px rgba(108,99,255,0.10);}
+
+  /* ===================== 测评页 ===================== */
+  .progress-track{height:6px;background:#e6e9f2;border-radius:6px;overflow:hidden;margin-bottom:10px;}
+  .progress-fill{height:100%;background:linear-gradient(90deg,var(--primary),var(--secondary));width:0;border-radius:6px;transition:width .3s ease;}
+  .progress-text{color:var(--text-2);font-size:13px;margin-bottom:24px;}
+  .q-card{animation:fadeUp .3s ease both;}
+  .q-title{font-size:19px;font-weight:700;margin-bottom:20px;color:var(--text);}
+  .opt{
+    display:block;width:100%;text-align:left;background:#f7f8fc;
+    border:1px solid #e6e9f2;border-radius:12px;padding:15px 16px;margin-bottom:12px;
+    color:var(--text);font-size:15px;cursor:pointer;font-family:var(--font);transition:.16s;
+  }
+  .opt:hover{border-color:var(--primary);background:rgba(108,99,255,0.06);}
+  .opt .idx{display:inline-block;width:22px;height:22px;line-height:22px;text-align:center;border-radius:50%;
+    background:rgba(108,99,255,0.12);color:var(--primary);margin-right:10px;font-size:13px;}
+
+  /* ===================== 结果页 ===================== */
+  .section-title{font-size:20px;font-weight:800;margin:0 0 16px;display:flex;align-items:center;gap:8px;color:var(--text);}
+  .section-title small{font-size:12px;color:var(--text-2);font-weight:500;}
+  #radar{display:block;margin:0 auto;}
+  .top3{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:18px;}
+  .top3 .chip{background:rgba(0,184,148,0.10);border:1px solid rgba(0,184,148,0.32);
+    border-radius:20px;padding:8px 14px;font-size:13px;color:var(--text);}
+  .top3 .chip b{color:var(--secondary);}
+  .type-card{background:linear-gradient(135deg,rgba(108,99,255,0.08),rgba(0,184,148,0.06));
+    border:1px solid rgba(108,99,255,0.30);border-radius:16px;padding:24px;margin-bottom:22px;}
+  .type-name{font-size:24px;font-weight:800;letter-spacing:1px;
+    background:linear-gradient(90deg,#6c63ff,#00b894);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .type-tag{color:#3f6b62;font-size:15px;margin:8px 0 16px;}
+  .type-strengths li{margin-bottom:8px;color:#3a3a52;font-size:14px;list-style:none;padding-left:18px;position:relative;}
+  .type-strengths li:before{content:"✦";color:var(--secondary);position:absolute;left:0;}
+  .type-blind{margin-top:14px;font-size:13px;color:#c0392b;background:rgba(255,107,107,0.08);
+    border-left:3px solid var(--warn);padding:10px 12px;border-radius:6px;}
+  /* 条形图 */
+  .bar-row{margin-bottom:14px;}
+  .bar-head{display:flex;justify-content:space-between;font-size:14px;margin-bottom:5px;color:var(--text);}
+  .bar-head .pct{color:var(--text-2);font-size:12px;}
+  .bar-track{height:12px;background:#eef0f6;border-radius:8px;overflow:hidden;}
+  .bar-fill{height:100%;border-radius:8px;width:0;transition:width .8s ease;}
+  .bar-fill.top{background:linear-gradient(90deg,var(--primary),var(--secondary));}
+  .bar-fill.norm{background:#d7dbe6;}
+  /* 职业 */
+  .career{display:flex;gap:12px;padding:14px 0;border-bottom:1px solid #edeff4;}
+  .career:last-child{border-bottom:none;}
+  .career .num{flex:0 0 28px;height:28px;line-height:28px;text-align:center;border-radius:50%;
+    background:linear-gradient(135deg,var(--primary),var(--secondary));color:#fff;font-weight:700;font-size:13px;}
+  .career .body b{color:var(--text);font-size:15px;}
+  .career .body .reason{color:var(--text-2);font-size:13px;margin-top:3px;}
+  .career .body .kw{margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;}
+  .career .body .kw span{font-size:11px;color:var(--primary);background:rgba(108,99,255,0.10);padding:3px 9px;border-radius:12px;}
+  .caution{border-left:3px solid var(--warn);background:rgba(255,107,107,0.06);padding:12px 14px;border-radius:8px;margin-bottom:12px;}
+  .caution b{color:#c0392b;}
+  .caution .reason{color:var(--text-2);font-size:13px;margin-top:4px;}
+  .advice{display:flex;gap:10px;align-items:flex-start;margin-bottom:12px;font-size:14px;color:#3a3a52;}
+  .advice .dot{flex:0 0 8px;height:8px;width:8px;border-radius:50%;background:var(--secondary);margin-top:8px;}
+  .advice b{color:var(--secondary);}
+  .actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;}
+  .btn{background:linear-gradient(135deg,var(--primary),#5a8de6);color:#fff;border:none;border-radius:24px;
+    padding:13px 26px;font-size:15px;cursor:pointer;font-family:var(--font);font-weight:600;}
+  .btn:hover{filter:brightness(1.05);}
+  .btn.ghost{background:transparent;border:1px solid var(--card-border);color:var(--text-2);font-weight:500;}
+  .btn.ghost:hover{color:var(--primary);border-color:var(--primary);}
+  @media(max-width:480px){
+    h1.title{font-size:25px;color:var(--text);}
+    .ring{width:152px;height:152px;}
+    .wrap{padding:20px 14px 50px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- ===================== 模块1：首页 ===================== -->
+<section id="home" class="view active">
+  <div class="ring" id="startRing">开始测评</div>
+  <h1 class="title">发现你的天赋密码</h1>
+  <div class="subtitle">8 个维度 · 32 道情境题 · 约 8 分钟</div>
+  <button class="ghost-btn" id="viewLastBtn" style="display:none">查看上次结果 →</button>
+  <div class="footnote">基于加德纳多元智能理论 · 结果仅供参考</div>
+</section>
+
+<!-- ===================== 模块2：测评页 ===================== -->
+<section id="quiz" class="view">
+  <div class="wrap">
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-text" id="progressText">第 1 / 32 题</div>
+    <div id="questionArea"></div>
+  </div>
+</section>
+
+<!-- ===================== 模块3+4：结果页 ===================== -->
+<section id="result" class="view">
+  <div class="wrap">
+
+    <!-- 3.1 雷达图 -->
+    <div class="glass glow-border">
+      <h2 class="section-title">天赋能力图谱 <small>Talent Radar</small></h2>
+      <canvas id="radar"></canvas>
+      <div class="top3" id="top3"></div>
+    </div>
+
+    <!-- 3.2 天赋类型 -->
+    <div class="glass">
+      <h2 class="section-title">天赋类型识别 <small>你的核心组合</small></h2>
+      <div id="typeCard"></div>
+    </div>
+
+    <!-- 3.3 维度条形图 -->
+    <div class="glass">
+      <h2 class="section-title">各维度得分 <small>百分位为参考值</small></h2>
+      <div id="bars"></div>
+    </div>
+
+    <!-- 4.1 职业方向 -->
+    <div class="glass">
+      <h2 class="section-title">职业发展方向 <small>基于霍兰德 RIASEC 映射</small></h2>
+      <div id="careers"></div>
+      <h3 style="font-size:15px;color:#c0392b;margin:22px 0 12px;">⚠ 需要谨慎考虑的方向</h3>
+      <div id="cautions"></div>
+    </div>
+
+    <!-- 4.2 发展建议 -->
+    <div class="glass">
+      <h2 class="section-title">可立即行动的发展建议</h2>
+      <div id="advices"></div>
+    </div>
+
+    <!-- 4.3 分享卡片 + 4.4 重新测评 -->
+    <div class="glass" style="text-align:center;">
+      <div class="actions" style="justify-content:center;">
+        <button class="btn" id="shareBtn">导出分享卡片（PNG）</button>
+        <button class="btn ghost" id="retakeBtn">重新测评</button>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<script>
+/* =====================================================================
+   天赋测评 — 纯前端单文件实现（浅色扁平风格）
+   理论：加德纳多元智能（8 维度）+ 霍兰德 RIASEC（职业映射）
+   ===================================================================== */
+
+/* ---------- 1. 维度配置（加德纳多元智能） ---------- */
+const DIMS = [
+  {key:'linguistic',   name:'语言智能',     desc:'文字表达、故事叙述、语言学习'},
+  {key:'logical',      name:'逻辑-数学智能', desc:'推理分析、数字敏感、系统思维'},
+  {key:'spatial',      name:'视觉-空间智能', desc:'图像思维、方向感、空间设计'},
+  {key:'musical',      name:'音乐智能',     desc:'节奏感知、音准辨别、声音敏感'},
+  {key:'kinesthetic',  name:'身体-动觉智能', desc:'动手能力、肢体协调、操作技巧'},
+  {key:'interpersonal',name:'人际智能',     desc:'共情沟通、团队协作、领导力'},
+  {key:'intrapersonal',name:'内省智能',     desc:'自我认知、情绪管理、独立思考'},
+  {key:'naturalist',   name:'自然观察智能', desc:'模式识别、细节观察、分类归纳'}
+];
+
+/* ---------- 2. 题库：32 题，每维度 4 题 ----------
+   每题 4 选项，每个选项带 {t:文案, d:维度, s:分值(1-4)}。
+   同一题不同选项奖励不同维度，使结果更立体。 */
+const QUESTIONS = [
+  /* --- 语言智能 linguistic --- */
+  {f:'linguistic',q:'朋友聚会时，你通常会：',o:[
+    {t:'讲一个最近发生的有趣故事，逗得大家哈哈大笑',d:'linguistic',s:4},
+    {t:'主动组织话题，让气氛热络起来',d:'interpersonal',s:3},
+    {t:'安静观察大家的状态，适时接话',d:'intrapersonal',s:2},
+    {t:'用手机帮大家拍合照、记录瞬间',d:'spatial',s:1}]},
+  {f:'linguistic',q:'写一份总结或报告时，你最享受的部分是：',o:[
+    {t:'斟酌词句，把复杂的事说清楚',d:'linguistic',s:4},
+    {t:'梳理结构，搭建清晰的逻辑框架',d:'logical',s:3},
+    {t:'配上图表，让内容更直观',d:'spatial',s:2},
+    {t:'先列清单，把要点一条条对齐',d:'intrapersonal',s:1}]},
+  {f:'linguistic',q:'看到一段特别打动你的话，你的第一反应是：',o:[
+    {t:'默念并记住它，想以后用在自己的表达里',d:'linguistic',s:4},
+    {t:'分析它为什么有说服力',d:'logical',s:3},
+    {t:'想象它配上画面会是什么感觉',d:'spatial',s:2},
+    {t:'思考它对当下的我有什么启发',d:'intrapersonal',s:1}]},
+  {f:'linguistic',q:'学一门新语言或新术语，你更容易通过：',o:[
+    {t:'朗读、背诵和反复使用来掌握',d:'linguistic',s:4},
+    {t:'理解规则和词根逻辑来掌握',d:'logical',s:3},
+    {t:'看图解、视频演示来掌握',d:'spatial',s:2},
+    {t:'和别人对话练习来掌握',d:'interpersonal',s:1}]},
+
+  /* --- 逻辑-数学 logical --- */
+  {f:'logical',q:'面对一个复杂问题，你第一步会：',o:[
+    {t:'把它拆成小块，逐个分析',d:'logical',s:4},
+    {t:'收集数据，找背后的规律',d:'naturalist',s:3},
+    {t:'画流程图或思维导图',d:'spatial',s:2},
+    {t:'先问自己：我真正想解决的是什么',d:'intrapersonal',s:1}]},
+  {f:'logical',q:'做重大决策前，你更依赖：',o:[
+    {t:'数据和利弊权衡',d:'logical',s:4},
+    {t:'把选项画成对比表来看清',d:'spatial',s:3},
+    {t:'和信任的人聊一遍',d:'interpersonal',s:2},
+    {t:'回想类似经历是怎么选的',d:'intrapersonal',s:1}]},
+  {f:'logical',q:'你最放松的休闲活动之一是：',o:[
+    {t:'数独、棋类或策略游戏',d:'logical',s:4},
+    {t:'观察自然，给事物分类归纳',d:'naturalist',s:3},
+    {t:'拆电子设备看它的原理',d:'kinesthetic',s:2},
+    {t:'听有结构感的音乐',d:'musical',s:1}]},
+  {f:'logical',q:'别人形容你时，最可能说的是：',o:[
+    {t:'脑子清楚，想问题有条理',d:'logical',s:4},
+    {t:'观察细致，总能发现细节',d:'naturalist',s:3},
+    {t:'动手能力强，什么都会修',d:'kinesthetic',s:2},
+    {t:'共情力强，很会安慰人',d:'interpersonal',s:1}]},
+
+  /* --- 视觉-空间 spatial --- */
+  {f:'spatial',q:'到一个陌生城市，你认路主要靠：',o:[
+    {t:'在脑海里画出路线和方位',d:'spatial',s:4},
+    {t:'留意沿途的地标和建筑特征',d:'naturalist',s:3},
+    {t:'跟着导航边走边记',d:'kinesthetic',s:2},
+    {t:'问当地人确认方向',d:'interpersonal',s:1}]},
+  {f:'spatial',q:'装修或布置房间时，你最在意：',o:[
+    {t:'空间布局和视觉协调',d:'spatial',s:4},
+    {t:'动手改造和组装家具',d:'kinesthetic',s:3},
+    {t:'整体氛围和配色',d:'musical',s:2},
+    {t:'功能分区是否高效',d:'logical',s:1}]},
+  {f:'spatial',q:'看一部电影，你最容易记住：',o:[
+    {t:'画面构图和视觉风格',d:'spatial',s:4},
+    {t:'配乐和声音设计',d:'musical',s:3},
+    {t:'剧情逻辑是否严密',d:'logical',s:2},
+    {t:'角色说过的好台词',d:'linguistic',s:1}]},
+  {f:'spatial',q:'你更擅长通过什么来理解新事物：',o:[
+    {t:'示意图、模型或地图',d:'spatial',s:4},
+    {t:'亲手操作试一遍',d:'kinesthetic',s:3},
+    {t:'文字说明',d:'linguistic',s:2},
+    {t:'听别人讲解',d:'interpersonal',s:1}]},
+
+  /* --- 音乐 musical --- */
+  {f:'musical',q:'一首歌吸引你，首先因为：',o:[
+    {t:'好听的旋律和节奏',d:'musical',s:4},
+    {t:'打动你的歌词',d:'linguistic',s:3},
+    {t:'它在某个场景下的氛围',d:'spatial',s:2},
+    {t:'勾起的一段回忆',d:'intrapersonal',s:1}]},
+  {f:'musical',q:'你更容易注意到环境里的：',o:[
+    {t:'背景音乐和声音的变化',d:'musical',s:4},
+    {t:'周围人的情绪和语气',d:'interpersonal',s:3},
+    {t:'光影和色彩的搭配',d:'spatial',s:2},
+    {t:'物品摆放是否整齐',d:'logical',s:1}]},
+  {f:'musical',q:'学一首新歌或乐器，你靠：',o:[
+    {t:'听旋律、跟唱模仿',d:'musical',s:4},
+    {t:'看谱子和指法图解',d:'spatial',s:3},
+    {t:'理解乐理规则',d:'logical',s:2},
+    {t:'反复练习形成肌肉记忆',d:'kinesthetic',s:1}]},
+  {f:'musical',q:'工作学习时，你倾向于：',o:[
+    {t:'听有节奏感的音乐提神',d:'musical',s:4},
+    {t:'在安静中专注',d:'intrapersonal',s:3},
+    {t:'边走动边思考',d:'kinesthetic',s:2},
+    {t:'和同伴一起讨论',d:'interpersonal',s:1}]},
+
+  /* --- 身体-动觉 kinesthetic --- */
+  {f:'kinesthetic',q:'学到新东西，你最想：',o:[
+    {t:'马上动手试一试',d:'kinesthetic',s:4},
+    {t:'画个流程图去理解',d:'spatial',s:3},
+    {t:'找相关案例研究',d:'naturalist',s:2},
+    {t:'写一遍笔记',d:'linguistic',s:1}]},
+  {f:'kinesthetic',q:'别人常说你：',o:[
+    {t:'闲不住，总在折腾东西',d:'kinesthetic',s:4},
+    {t:'坐得住，想得深',d:'intrapersonal',s:3},
+    {t:'观察力强，很细心',d:'naturalist',s:2},
+    {t:'表达好，很会讲故事',d:'linguistic',s:1}]},
+  {f:'kinesthetic',q:'运动或做手工时，你更凭：',o:[
+    {t:'身体的感觉和肌肉记忆',d:'kinesthetic',s:4},
+    {t:'观察模仿别人的动作',d:'spatial',s:3},
+    {t:'理解动作背后的原理',d:'logical',s:2},
+    {t:'跟着节奏来',d:'musical',s:1}]},
+  {f:'kinesthetic',q:'组装家具或修东西，你：',o:[
+    {t:'边看图纸边上手，享受过程',d:'kinesthetic',s:4},
+    {t:'先整体想清楚结构再动手',d:'logical',s:3},
+    {t:'找视频跟着做',d:'spatial',s:2},
+    {t:'叫朋友一起来弄',d:'interpersonal',s:1}]},
+
+  /* --- 人际 interpersonal --- */
+  {f:'interpersonal',q:'团队合作里，你常扮演：',o:[
+    {t:'协调者，把大家拧成一股绳',d:'interpersonal',s:4},
+    {t:'执行者，把事做出来',d:'kinesthetic',s:3},
+    {t:'点子王，出创意',d:'spatial',s:2},
+    {t:'记录者，整理信息',d:'logical',s:1}]},
+  {f:'interpersonal',q:'朋友遇到烦恼，你通常：',o:[
+    {t:'先共情，听他把话说完',d:'interpersonal',s:4},
+    {t:'帮他从逻辑上理清楚',d:'logical',s:3},
+    {t:'陪他做点事分散注意',d:'kinesthetic',s:2},
+    {t:'给他讲个段子逗乐',d:'linguistic',s:1}]},
+  {f:'interpersonal',q:'组织一次活动，你最花心思在：',o:[
+    {t:'让大家都能参与、玩得尽兴',d:'interpersonal',s:4},
+    {t:'流程和细节不出错',d:'logical',s:3},
+    {t:'现场的视觉和布置',d:'spatial',s:2},
+    {t:'背景音乐和氛围',d:'musical',s:1}]},
+  {f:'interpersonal',q:'在一群陌生人面前，你：',o:[
+    {t:'很快就能聊起来，破冰',d:'interpersonal',s:4},
+    {t:'先观察，找共同话题再开口',d:'naturalist',s:3},
+    {t:'专注手头的事不被干扰',d:'kinesthetic',s:2},
+    {t:'默默听，必要时才说',d:'intrapersonal',s:1}]},
+
+  /* --- 内省 intrapersonal --- */
+  {f:'intrapersonal',q:'周末没人打扰，你更想：',o:[
+    {t:'独处、看书或复盘自己',d:'intrapersonal',s:4},
+    {t:'约朋友出去玩',d:'interpersonal',s:3},
+    {t:'做手工或运动发泄',d:'kinesthetic',s:2},
+    {t:'看部电影放松',d:'spatial',s:1}]},
+  {f:'intrapersonal',q:'做选择时，你最看重：',o:[
+    {t:'这是否符合我的真实想法',d:'intrapersonal',s:4},
+    {t:'逻辑上是否最优',d:'logical',s:3},
+    {t:'别人会不会认可',d:'interpersonal',s:2},
+    {t:'当下的感觉对不对',d:'musical',s:1}]},
+  {f:'intrapersonal',q:'情绪低落时，你通常：',o:[
+    {t:'自己消化，想清楚再行动',d:'intrapersonal',s:4},
+    {t:'找人聊聊就好多了',d:'interpersonal',s:3},
+    {t:'动一动、运动一下',d:'kinesthetic',s:2},
+    {t:'写下来整理思绪',d:'linguistic',s:1}]},
+  {f:'intrapersonal',q:'你更相信自己的：',o:[
+    {t:'内在判断和长期目标',d:'intrapersonal',s:4},
+    {t:'理性分析和证据',d:'logical',s:3},
+    {t:'身体和直觉反应',d:'kinesthetic',s:2},
+    {t:'对他人的敏锐感知',d:'interpersonal',s:1}]},
+
+  /* --- 自然观察 naturalist --- */
+  {f:'naturalist',q:'旅行时，你最容易被吸引去看：',o:[
+    {t:'自然景观、动植物',d:'naturalist',s:4},
+    {t:'博物馆和历史遗迹',d:'logical',s:3},
+    {t:'城市建筑和设计',d:'spatial',s:2},
+    {t:'当地市集和人群',d:'interpersonal',s:1}]},
+  {f:'naturalist',q:'你观察世界的方式偏：',o:[
+    {t:'找规律、做分类',d:'naturalist',s:4},
+    {t:'分析因果和逻辑',d:'logical',s:3},
+    {t:'感受美和氛围',d:'spatial',s:2},
+    {t:'关注人的状态',d:'interpersonal',s:1}]},
+  {f:'naturalist',q:'养植物或宠物，你：',o:[
+    {t:'很在意它们的细微变化',d:'naturalist',s:4},
+    {t:'给它们制定规律作息',d:'logical',s:3},
+    {t:'喜欢拍照记录成长',d:'spatial',s:2},
+    {t:'享受陪伴的感觉',d:'interpersonal',s:1}]},
+  {f:'naturalist',q:'处理一堆杂乱信息时，你：',o:[
+    {t:'先分类、找模式和关联',d:'naturalist',s:4},
+    {t:'建表格排序筛选',d:'logical',s:3},
+    {t:'画关系图理清',d:'spatial',s:2},
+    {t:'列清单逐个处理',d:'intrapersonal',s:1}]}
+];
+
+/* ---------- 3. 天赋类型（14 种，按维度组合匹配） ----------
+   key = 两个维度 key 按字母序拼接，用于匹配 top2 组合 */
+const TYPES = {
+  'interpersonal|linguistic':{name:'天赋叙述者',tag:'你拥有用故事连接人心的力量。',
+    strengths:['把抽象感受转化成别人听得懂的语言','在群体中天然地成为氛围与意义的核心','擅长用叙事建立信任与共鸣'],
+    blind:'容易为了照顾听众而模糊自己的真实立场。'},
+  'logical|naturalist':{name:'天赋解构者',tag:'你擅长在复杂信息中看见规律。',
+    strengths:['快速把混乱拆解成可分析的模块','对数据、模式和异常极其敏感','做决策习惯先验证再下结论'],
+    blind:'过度依赖逻辑，可能忽略人的情绪成本。'},
+  'kinesthetic|spatial':{name:'天赋造物者',tag:'你用手和眼把想法变成现实。',
+    strengths:['空间想象力与动手能力天然结合','能迅速把草图落成可触摸的成品','对材质、结构与比例有直觉'],
+    blind:'不耐烦纯讨论，容易跳过规划直接上手。'},
+  'intrapersonal|linguistic':{name:'天赋思想者',tag:'你在文字与独处中沉淀洞见。',
+    strengths:['善于用写作整理混乱的思绪','独立思考，不易被外界裹挟','能把复杂概念讲得深入浅出'],
+    blind:'过度内省，可能错过及时行动的机会。'},
+  'interpersonal|kinesthetic':{name:'天赋联结者',tag:'你在行动中与团队彼此成就。',
+    strengths:['以身体力行的姿态带动他人','在协作现场天然有凝聚力','把计划变成大家一起完成的事'],
+    blind:'太在意团队和谐，可能回避必要的冲突。'},
+  'intrapersonal|musical':{name:'天赋感受者',tag:'你用旋律表达内心的流动。',
+    strengths:['对情绪和氛围高度敏感','擅长用声音/节奏自我疗愈与表达','独处时能产出细腻的创意'],
+    blind:'情绪波动易被环境放大，需要稳定锚点。'},
+  'kinesthetic|logical':{name:'天赋工程者',tag:'你把系统逻辑变成可运行的实物。',
+    strengths:['既能想清楚结构，也能动手实现','对"为什么这样运作"有执念','把抽象方案落到工程细节'],
+    blind:'容易陷入实现细节，忽略整体叙事。'},
+  'intrapersonal|spatial':{name:'天赋设计者',tag:'你用空间与留白表达自我。',
+    strengths:['对视觉秩序和节奏有审美直觉','独处时灵感最丰沛','擅长用画面代替冗长说明'],
+    blind:'表达偏内敛，想法需要被主动看见。'},
+  'interpersonal|naturalist':{name:'天赋自然引导者',tag:'你在观察与连接中带领他人。',
+    strengths:['既懂人，也懂事物运行的规律','擅长把人或资源分门别类地用好','在真实情境里做引导很自然'],
+    blind:'对低效和混乱容忍度低，容易替人包办。'},
+  'linguistic|naturalist':{name:'天赋探究者',tag:'你用语言梳理世界的秩序。',
+    strengths:['擅长把观察所得写成清晰体系','对分类、定义和命名有天赋','用文字把模糊现象讲明白'],
+    blind:'容易停留在"解释世界"，疏于"改变世界"。'},
+  'musical|spatial':{name:'天赋节奏造境者',tag:'你用声音与画面构筑氛围。',
+    strengths:['对视听语言的配合极其敏感','能快速营造沉浸式的场景感','创意表达自带韵律与美感'],
+    blind:'重感觉轻结构，落地时需要补逻辑。'},
+  'interpersonal|intrapersonal':{name:'天赋共情者',tag:'你既懂他人，也懂自己。',
+    strengths:['在理解和被理解之间自由切换','既能倾听也能自我校准','关系中的分寸感很好'],
+    blind:'吸收他人情绪过多，需建立边界。'},
+  'intrapersonal|logical':{name:'天赋战略者',tag:'你用理性与自省规划长远。',
+    strengths:['把自我认知转化为清晰目标','决策兼顾数据与价值观','不容易被短期噪音带偏'],
+    blind:'想得周全但行动偏慢，需设截止线。'},
+  'kinesthetic|naturalist':{name:'天赋实践者',tag:'你在动手与观察中解决问题。',
+    strengths:['用试错代替空谈，效率高','对真实世界的细节很敏感','在野外/现场状态最佳'],
+    blind:'偏好经验路径，可能轻视理论抽象。'}
+};
+/* 兜底类型（无匹配组合时） */
+const FALLBACK_TYPE = {name:'天赋探索者',tag:'你的天赋组合独一无二，值得持续探索。',
+  strengths:['具备跨维度的复合优势','尚未被单一标签定义，空间很大','适合用行动不断验证自己'],
+  blind:'优势分散时，先聚焦一个维度做深。'};
+
+/* ---------- 4. 职业发展候选池（霍兰德 RIASEC 映射） ----------
+   favors: 该职业最依赖的天赋维度；kw: 适合的天赋关键词 */
+const CAREERS = [
+  {name:'用户研究',     favors:['interpersonal','intrapersonal'], kw:['共情','洞察','倾听']},
+  {name:'内容策划',     favors:['linguistic','spatial'],          kw:['叙事','创意','结构']},
+  {name:'产品设计',     favors:['spatial','kinesthetic'],         kw:['体验','原型','审美']},
+  {name:'数据分析',     favors:['logical','naturalist'],          kw:['逻辑','建模','严谨']},
+  {name:'教育培训',     favors:['interpersonal','linguistic'],    kw:['表达','耐心','影响']},
+  {name:'内容创作/自媒体',favors:['linguistic','musical'],        kw:['表达','节奏','个性']},
+  {name:'心理咨询',     favors:['interpersonal','intrapersonal'], kw:['共情','稳定','边界']},
+  {name:'景观与空间设计',favors:['spatial','naturalist'],         kw:['观察','美学','秩序']},
+  {name:'软件工程',     favors:['logical','kinesthetic'],         kw:['工程','逻辑','动手']},
+  {name:'活动策划',     favors:['interpersonal','spatial'],        kw:['统筹','现场','创意']},
+  {name:'音乐/声音设计',favors:['musical','spatial'],             kw:['听觉','氛围','审美']},
+  {name:'自然科普/环保',favors:['naturalist','linguistic'],       kw:['观察','分类','传播']}
+];
+
+/* ---------- 5. 发展建议池（按维度） ---------- */
+const SUGGESTIONS = {
+  linguistic:[{a:'每周写一篇 300 字观察笔记',b:'放大你的语言智能优势'},
+              {a:'把复杂概念讲给不懂的人听',b:'锻炼结构化表达'}],
+  logical:[{a:'每天用 10 分钟拆解一个生活问题',b:'强化系统思维'},
+           {a:'学一点数据分析或编程基础',b:'把逻辑变成可验证的能力'}],
+  spatial:[{a:'用草图而非文字记录想法',b:'训练空间可视化'},
+           {a:'尝试一次视觉类创作（摄影/设计）',b:'把感知落地'}],
+  musical:[{a:'每天留出一段专注听音乐的时间',b:'提升声音敏感度'},
+           {a:'学一种简单乐器或节奏训练',b:'激活音乐智能'}],
+  kinesthetic:[{a:'把想做的事拆成可动手的小实验',b:'在行动中学习'},
+               {a:'每周一次手工或运动类活动',b:'强化身体感知'}],
+  interpersonal:[{a:'加入 3–5 人项目小组并主动承担协调角色',b:'验证人际智能潜力'},
+                 {a:'每周主动深度倾听一位朋友',b:'打磨共情力'}],
+  intrapersonal:[{a:'每天写 3 行情绪/决策复盘',b:'加深自我认知'},
+                 {a:'定期做一次"什么对我真正重要"的梳理',b:'校准长期方向'}],
+  naturalist:[{a:'养一盆植物或记录自然变化',b:'训练观察与分类'},
+              {a:'用"找规律"的视角复盘一周信息',b:'强化模式识别'}]
+};
+
+/* ===================== 状态 ===================== */
+let answers = new Array(QUESTIONS.length).fill(-1); // 每题选中的选项下标
+let current = 0;
+let result = null;
+
+/* ===================== 工具函数 ===================== */
+const $ = id => document.getElementById(id);
+const dimName = k => (DIMS.find(d=>d.key===k)||{}).name || k;
+function shuffle(arr){ // Fisher–Yates，仅打乱选项展示顺序，分数仍跟随选项对象
+  const a=arr.slice();
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+function showView(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  $(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+/* ===================== 模块1：首页 ===================== */
+function initHome(){
+  const saved = localStorage.getItem('talent_result_v1');
+  $('viewLastBtn').style.display = saved ? 'inline-block' : 'none';
+  $('startRing').onclick = ()=>{ answers = new Array(QUESTIONS.length).fill(-1); current=0; renderQuestion(); showView('quiz'); };
+  $('viewLastBtn').onclick = ()=>{ try{ result=JSON.parse(saved); renderResult(); showView('result'); }catch(e){ localStorage.removeItem('talent_result_v1'); } };
+}
+
+/* ===================== 模块2：测评页 ===================== */
+function renderQuestion(){
+  // 进度
+  $('progressFill').style.width = (current/QUESTIONS.length*100)+'%';
+  $('progressText').textContent = `第 ${current+1} / ${QUESTIONS.length} 题`;
+
+  const q = QUESTIONS[current];
+  const area = $('questionArea');
+  const opts = shuffle(q.o);
+  let html = `<div class="q-card"><div class="q-title">${q.q}</div>`;
+  opts.forEach((o,idx)=>{
+    html += `<button class="opt" data-i="${q.o.indexOf(o)}">
+      <span class="idx">${String.fromCharCode(65+idx)}</span>${o.t}</button>`;
+  });
+  html += `</div>`;
+  area.innerHTML = html;
+
+  area.querySelectorAll('.opt').forEach(btn=>{
+    btn.onclick = ()=>{
+      answers[current] = parseInt(btn.dataset.i,10);
+      $('progressFill').style.width = ((current+1)/QUESTIONS.length*100)+'%';
+      area.querySelectorAll('.opt').forEach(b=>b.style.pointerEvents='none');
+      btn.style.borderColor='var(--secondary)'; btn.style.background='rgba(0,184,148,0.10)';
+      setTimeout(()=>{
+        if(current < QUESTIONS.length-1){ current++; renderQuestion(); }
+        else { finish(); }
+      },220);
+    };
+  });
+}
+
+/* ===================== 评分计算 =====================
+   加权：raw[d] = Σ选中的选项分值；
+   归一化：dimMax[d] = Σ每题该维度可获得的最大分值；score = raw/dimMax*100 */
+function computeScores(ans){
+  const raw={}, dimMax={};
+  DIMS.forEach(d=>{raw[d.key]=0; dimMax[d.key]=0;});
+  QUESTIONS.forEach((q,qi)=>{
+    const best={};
+    q.o.forEach(o=>{ if(!best[o.d]||o.s>best[o.d]) best[o.d]=o.s; });
+    Object.keys(best).forEach(d=> dimMax[d]+=best[d]);
+    if(ans[qi]>=0){ const o=q.o[ans[qi]]; raw[o.d]+=o.s; }
+  });
+  const scores={};
+  DIMS.forEach(d=>{ scores[d.key] = Math.round(raw[d.key]/dimMax[d.key]*100); });
+  return scores;
+}
+
+/* 模拟百分位（标注"参考值"），由得分确定性推导，范围 8–98 */
+function fakePercentile(score){ return Math.max(8, Math.min(98, Math.round(score*0.9+8))); }
+
+/* ===================== 类型匹配 =====================
+   取得分最高的 3 个维度，枚举两两组合，命中 TYPES 即用；否则兜底 */
+function matchType(scores){
+  const ranked = DIMS.map(d=>({key:d.key, v:scores[d.key]})).sort((a,b)=>b.v-a.v);
+  const top3 = ranked.slice(0,3).map(x=>x.key);
+  const pairs = [[top3[0],top3[1]],[top3[0],top3[2]],[top3[1],top3[2]]];
+  for(const [a,b] of pairs){
+    const key=[a,b].sort().join('|');
+    if(TYPES[key]) return {type:TYPES[key], top:ranked};
+  }
+  return {type:FALLBACK_TYPE, top:ranked};
+}
+
+/* ===================== 模块3：结果渲染 ===================== */
+function finish(){
+  result = {scores:computeScores(answers), ts:Date.now()};
+  localStorage.setItem('talent_result_v1', JSON.stringify(result));
+  renderResult();
+  showView('result');
+}
+
+function renderResult(){
+  const scores = result.scores;
+  const scoreArr = DIMS.map(d=>scores[d.key]); // 雷达图需要的顺序数组
+
+  // 3.1 雷达图（Canvas 手绘 + 展开动画，浅色主题）
+  renderMainRadar(scoreArr);
+
+  const ranked = DIMS.map(d=>({key:d.key,name:d.name,v:scores[d.key]})).sort((a,b)=>b.v-a.v);
+  $('top3').innerHTML = ranked.slice(0,3).map(d=>
+    `<div class="chip"><b>${d.name}</b> · ${d.v} 分</div>`).join('');
+
+  // 3.2 类型识别
+  const mt = matchType(scores);
+  const t = mt.type;
+  $('typeCard').innerHTML = `
+    <div class="type-card">
+      <div class="type-name">${t.name}</div>
+      <div class="type-tag">${t.tag}</div>
+      <ul class="type-strengths">${t.strengths.map(s=>`<li>${s}</li>`).join('')}</ul>
+      <div class="type-blind">可能的盲区：${t.blind}</div>
+    </div>`;
+
+  // 3.3 条形图（高到低，前 3 用主题渐变）
+  const bars = ranked.map(d=>({...d, pct:fakePercentile(d.v)}));
+  $('bars').innerHTML = bars.map((d,i)=>`
+    <div class="bar-row">
+      <div class="bar-head"><span>${d.name}</span>
+        <span><b style="color:${i<3?'var(--secondary)':'#23233a'}">${d.v}</b>
+        <span class="pct">优于 ${d.pct}% 的用户（参考值）</span></span></div>
+      <div class="bar-track"><div class="bar-fill ${i<3?'top':'norm'}" data-w="${d.v}"></div></div>
+    </div>`).join('');
+  requestAnimationFrame(()=>{ $('bars').querySelectorAll('.bar-fill').forEach(f=>f.style.width=f.dataset.w+'%'); });
+
+  // 4.1 职业方向 TOP5 + 2 谨慎
+  renderCareers(scores);
+
+  // 4.2 发展建议（取 Top3 维度各一条）
+  const advTop = mt.top.slice(0,3).map(x=>x.key);
+  $('advices').innerHTML = advTop.map(k=>{
+    const s = SUGGESTIONS[k][0];
+    return `<div class="advice"><span class="dot"></span><div>${s.a} → <b>${s.b}</b></div></div>`;
+  }).join('');
+}
+
+/* ---------- 4.1 职业匹配算法 ---------- */
+function renderCareers(scores){
+  const scored = CAREERS.map(c=>{
+    const avg = c.favors.reduce((s,k)=>s+scores[k],0)/c.favors.length;
+    return {...c, avg};
+  }).sort((a,b)=>b.avg-a.avg);
+
+  const top5 = scored.slice(0,5);
+  $('careers').innerHTML = top5.map((c,i)=>{
+    const reasonDim = c.favors.slice().sort((a,b)=>scores[b]-scores[a])[0];
+    return `<div class="career">
+      <div class="num">${i+1}</div>
+      <div class="body"><b>${c.name}</b>
+        <div class="reason">你的【${dimName(reasonDim)}】突出，与该方向高度契合。</div>
+        <div class="kw">${c.kw.map(k=>`<span>${k}</span>`).join('')}</div>
+      </div></div>`;
+  }).join('');
+
+  const mean = DIMS.reduce((s,d)=>s+scores[d.key],0)/DIMS.length;
+  const weak = scored.filter(c=> c.favors.some(k=>scores[k]<mean))
+                     .sort((a,b)=>a.avg-b.avg).slice(0,2);
+  $('cautions').innerHTML = weak.map(c=>{
+    const weakDim = c.favors.slice().sort((a,b)=>scores[a]-scores[b])[0];
+    return `<div class="caution"><b>${c.name}</b>
+      <div class="reason">该方向对【${dimName(weakDim)}】要求较高，而你的这一维度处于中位，需要额外积累再切入。</div></div>`;
+  }).join('') || '<div class="caution">暂无特别需要谨慎的方向，你的天赋分布较均衡。</div>';
+}
+
+/* ===================== Canvas：雷达图核心绘制 =====================
+   drawRadarCore 为纯绘制（CSS 像素坐标），主图与分享卡复用；
+   颜色通过 opts 传入，适配浅色主题。 */
+function drawRadarCore(ctx, cx, cy, R, scores, opts){
+  opts = opts||{};
+  const n = DIMS.length;
+  const t = opts.t!=null ? opts.t : 1;          // 展开动画系数 0..1
+  const labelOff = opts.labelOffset||16;
+  const fs = opts.fontSize||12;
+  const c = opts.colors || {};
+  const gridStroke = c.gridStroke || (l=>'rgba(255,255,255,'+(0.07+0.03*l)+')');
+  const axisStroke = c.axisStroke || 'rgba(255,255,255,0.12)';
+  const fill0 = c.fill0 || 'rgba(108,99,255,0.45)';
+  const fill1 = c.fill1 || 'rgba(0,212,170,0.45)';
+  const vertex = c.vertex || '#00d4aa';
+  const labelColor = c.labelColor || '#cfcfe6';
+  const scoreColor = c.scoreColor || '#ffffff';
+
+  // 网格环
+  const levels = 4;
+  for(let l=1;l<=levels;l++){
+    const rr = R*l/levels;
+    ctx.beginPath();
+    for(let i=0;i<n;i++){
+      const a=-Math.PI/2 + i*2*Math.PI/n;
+      const x=cx+rr*Math.cos(a), y=cy+rr*Math.sin(a);
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.closePath();
+    ctx.strokeStyle=gridStroke(l); ctx.lineWidth=1; ctx.stroke();
+  }
+  // 轴线
+  for(let i=0;i<n;i++){
+    const a=-Math.PI/2 + i*2*Math.PI/n;
+    ctx.beginPath(); ctx.moveTo(cx,cy);
+    ctx.lineTo(cx+R*Math.cos(a), cy+R*Math.sin(a));
+    ctx.strokeStyle=axisStroke; ctx.stroke();
+  }
+  // 数据多边形（渐变填充）
+  const pts=[];
+  for(let i=0;i<n;i++){
+    const a=-Math.PI/2 + i*2*Math.PI/n;
+    const rr=R*(scores[i]/100)*t;
+    pts.push([cx+rr*Math.cos(a), cy+rr*Math.sin(a)]);
+  }
+  ctx.beginPath();
+  pts.forEach((p,i)=> i===0?ctx.moveTo(p[0],p[1]):ctx.lineTo(p[0],p[1]));
+  ctx.closePath();
+  const grad=ctx.createLinearGradient(cx-R,cy-R,cx+R,cy+R);
+  grad.addColorStop(0,fill0); grad.addColorStop(1,fill1);
+  ctx.fillStyle=grad; ctx.fill();
+  ctx.lineWidth=2; ctx.strokeStyle=vertex; ctx.stroke();
+  // 顶点
+  ctx.fillStyle=vertex;
+  pts.forEach(p=>{ ctx.beginPath(); ctx.arc(p[0],p[1],3,0,2*Math.PI); ctx.fill(); });
+
+  // 标签 + 得分
+  if(opts.labels!==false){
+    for(let i=0;i<n;i++){
+      const a=-Math.PI/2 + i*2*Math.PI/n;
+      const cos=Math.cos(a), sin=Math.sin(a);
+      const lx=cx+(R+labelOff)*cos, ly=cy+(R+labelOff)*sin;
+      ctx.textAlign = cos>0.1?'left':cos<-0.1?'right':'center';
+      ctx.textBaseline = sin>0.1?'top':sin<-0.1?'bottom':'middle';
+      ctx.fillStyle=labelColor; ctx.font=fs+'px '+getFont();
+      ctx.fillText(DIMS[i].name, lx, ly);
+      if(opts.scores!==false){
+        const sx=cx+(R*(scores[i]/100)*t+10)*cos, sy=cy+(R*(scores[i]/100)*t+10)*sin;
+        ctx.fillStyle=scoreColor; ctx.font='bold '+fs+'px '+getFont();
+        ctx.textAlign = cos>0.1?'left':cos<-0.1?'right':'center';
+        ctx.fillText(Math.round(scores[i]), sx, sy);
+        ctx.fillStyle=labelColor;
+      }
+    }
+  }
+}
+function getFont(){ return '-apple-system,"PingFang SC","Microsoft YaHei",sans-serif'; }
+
+/* ---------- 主雷达图：处理 DPR + 展开动画（浅色配色） ---------- */
+function renderMainRadar(scores){
+  const canvas=$('radar');
+  const dpr=window.devicePixelRatio||1;
+  const size=Math.max(260, Math.min(360, canvas.parentElement.clientWidth-44));
+  canvas.style.width=size+'px'; canvas.style.height=size+'px';
+  canvas.width=size*dpr; canvas.height=size*dpr;
+  const ctx=canvas.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  const cx=size/2, cy=size/2, R=size/2-46;
+  const colors={
+    gridStroke:l=>'rgba(30,30,55,'+(0.06+0.03*l)+')',
+    axisStroke:'rgba(30,30,55,0.14)',
+    fill0:'rgba(108,99,255,0.32)',
+    fill1:'rgba(0,184,148,0.32)',
+    vertex:'#00b894',
+    labelColor:'#4b4b63',
+    scoreColor:'#23233a'
+  };
+  const start=performance.now();
+  function frame(now){
+    const p=Math.min(1,(now-start)/700);
+    const e=1-Math.pow(1-p,3); // easeOutCubic
+    ctx.clearRect(0,0,size,size);
+    drawRadarCore(ctx,cx,cy,R,scores,{t:e,labelOffset:16,fontSize:12,colors});
+    if(p<1) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+/* ===================== 4.3 分享卡片（750×1000 Canvas → PNG，浅色扁平） ===================== */
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+}
+function generateShareCard(){
+  const scores = result.scores;
+  const scoreArr = DIMS.map(d=>scores[d.key]);
+  const ranked = DIMS.map(d=>({name:d.name,v:scores[d.key]})).sort((a,b)=>b.v-a.v);
+  const mt = matchType(scores); const t = mt.type;
+
+  const c=document.createElement('canvas'); c.width=750; c.height=1000;
+  const ctx=c.getContext('2d');
+  // 浅色背景渐变
+  const g=ctx.createLinearGradient(0,0,750,1000);
+  g.addColorStop(0,'#f6f8fc'); g.addColorStop(1,'#eef1f8');
+  ctx.fillStyle=g; ctx.fillRect(0,0,750,1000);
+  // 彩色边框
+  ctx.strokeStyle='rgba(108,99,255,0.55)'; ctx.lineWidth=3;
+  roundRect(ctx,24,24,702,952,26); ctx.stroke();
+  // 顶部品牌
+  ctx.textAlign='center'; ctx.fillStyle='#70748c';
+  ctx.font='22px '+getFont(); ctx.fillText('天赋测评 · 发现你的隐藏优势',375,70);
+  // 类型名称 + 标签
+  ctx.fillStyle='#23233a'; ctx.font='bold 54px '+getFont();
+  ctx.fillText(t.name,375,150);
+  ctx.fillStyle='#3f6b62'; ctx.font='26px '+getFont();
+  ctx.fillText(t.tag,375,200);
+  // 缩略雷达图（浅色配色）
+  const radarColors={
+    gridStroke:l=>'rgba(30,30,55,'+(0.06+0.03*l)+')',
+    axisStroke:'rgba(30,30,55,0.14)',
+    fill0:'rgba(108,99,255,0.30)',
+    fill1:'rgba(0,184,148,0.30)',
+    vertex:'#00b894',
+    labelColor:'#4b4b63',
+    scoreColor:'#23233a'
+  };
+  drawRadarCore(ctx,375,440,225,scoreArr,{labels:true,labelOffset:30,fontSize:17,scores:true,colors:radarColors});
+  // Top3 维度
+  ctx.fillStyle='#00b894'; ctx.font='bold 24px '+getFont();
+  ctx.fillText('你的天赋 Top 3',375,720);
+  ctx.font='22px '+getFont();
+  ranked.slice(0,3).forEach((d,i)=>{
+    const y=765+i*44;
+    ctx.textAlign='center';
+    ctx.fillStyle='#23233a'; ctx.fillText(`${i+1}. ${d.name}  ·  ${d.v} 分`,375,y);
+  });
+  // 底部品牌
+  ctx.fillStyle='#70748c'; ctx.font='22px '+getFont(); ctx.textAlign='center';
+  ctx.fillText('天赋测评 · 发现你的隐藏优势',375,945);
+
+  const url=c.toDataURL('image/png');
+  const a=document.createElement('a'); a.href=url; a.download='天赋测评卡片.png'; a.click();
+}
+
+/* ===================== 绑定 & 入口 ===================== */
+$('shareBtn').onclick = generateShareCard;
+$('retakeBtn').onclick = ()=>{ localStorage.removeItem('talent_result_v1'); answers=new Array(QUESTIONS.length).fill(-1); current=0; showView('home'); initHome(); };
+
+initHome();
+</script>
+</body>
+</html>
